@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>radio.freeside.ltd</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      background: #000;
+      overflow: hidden;
+      width: 100vw;
+      height: 100vh;
+    }
+    canvas { display: block; }
+  </style>
+</head>
+<body>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script>
+    const scene = new THREE.Scene();
+    const camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0.1, 10);
+    camera.position.z = 1;
+
+    const renderer = new THREE.WebGLRenderer({ antialias: false });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.setPixelRatio(window.devicePixelRatio);
+    document.body.appendChild(renderer.domElement);
+
+    // Create a canvas texture with the text
+    const textCanvas = document.createElement('canvas');
+    const ctx = textCanvas.getContext('2d');
+    textCanvas.width = 2048;
+    textCanvas.height = 1024;
+
+    function drawText() {
+      ctx.clearRect(0, 0, textCanvas.width, textCanvas.height);
+      ctx.fillStyle = '#000000';
+      ctx.fillRect(0, 0, textCanvas.width, textCanvas.height);
+      ctx.fillStyle = '#ffffff';
+      ctx.font = 'bold 120px monospace';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'top';
+      // 2em offset from top ≈ 240px at 120px font size
+      ctx.fillText('radio.freeside.ltd', textCanvas.width / 2, 240);
+    }
+    drawText();
+
+    const textTexture = new THREE.CanvasTexture(textCanvas);
+    textTexture.minFilter = THREE.LinearFilter;
+    textTexture.magFilter = THREE.LinearFilter;
+
+    // Glitch shader material
+    const glitchMaterial = new THREE.ShaderMaterial({
+      uniforms: {
+        uTexture: { value: textTexture },
+        uTime: { value: 0.0 },
+        uResolution: { value: new THREE.Vector2(window.innerWidth, window.innerHeight) }
+      },
+      vertexShader: `
+        varying vec2 vUv;
+        void main() {
+          vUv = uv;
+          gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+        }
+      `,
+      fragmentShader: `
+        uniform sampler2D uTexture;
+        uniform float uTime;
+        uniform vec2 uResolution;
+        varying vec2 vUv;
+
+        float random(vec2 st) {
+          return fract(sin(dot(st.xy, vec2(12.9898, 78.233))) * 43758.5453123);
+        }
+
+        float randomLine(float seed) {
+          return fract(sin(seed * 127.1) * 43758.5453);
+        }
+
+        void main() {
+          vec2 uv = vUv;
+
+          // Time-based glitch triggers
+          float glitchStrength = step(0.92, random(vec2(floor(uTime * 3.0), 0.0)));
+          float glitchStrength2 = step(0.85, random(vec2(floor(uTime * 7.0), 1.0)));
+
+          // Horizontal block displacement
+          float blockY = floor(uv.y * 20.0);
+          float blockShift = (random(vec2(blockY, floor(uTime * 12.0))) - 0.5) * 0.08 * glitchStrength;
+
+          // Scanline-style slice displacement
+          float sliceY = floor(uv.y * 80.0);
+          float sliceShift = (random(vec2(sliceY, floor(uTime * 20.0))) - 0.5) * 0.03 * glitchStrength2;
+
+          // Persistent subtle jitter
+          float microJitter = (random(vec2(floor(uv.y * 200.0), floor(uTime * 30.0))) - 0.5) * 0.003;
+
+          vec2 displaced = uv;
+          displaced.x += blockShift + sliceShift + microJitter;
+
+          // RGB channel splitting (chromatic aberration)
+          float rgbShift = 0.004 + 0.02 * glitchStrength + 0.008 * glitchStrength2;
+
+          float r = texture2D(uTexture, vec2(displaced.x + rgbShift, displaced.y)).r;
+          float g = texture2D(uTexture, displaced).g;
+          float b = texture2D(uTexture, vec2(displaced.x - rgbShift, displaced.y)).b;
+
+          vec3 color = vec3(r, g, b);
+
+          // Random color block flash
+          float flashBlock = step(0.97, random(vec2(floor(uv.y * 15.0), floor(uTime * 5.0)))) * glitchStrength;
+          color = mix(color, vec3(
+            random(vec2(floor(uTime * 10.0), 0.1)),
+            random(vec2(floor(uTime * 10.0), 0.2)),
+            random(vec2(floor(uTime * 10.0), 0.3))
+          ), flashBlock * 0.6);
+
+          // Scanlines
+          float scanline = sin(uv.y * uResolution.y * 1.5) * 0.04;
+          color -= scanline;
+
+          // Occasional full-frame static burst
+          float staticBurst = step(0.96, random(vec2(floor(uTime * 2.0), 3.0)));
+          float noise = random(uv + fract(uTime)) * 0.15 * staticBurst;
+          color += noise;
+
+          gl_FragColor = vec4(color, 1.0);
+        }
+      `
+    });
+
+    const plane = new THREE.PlaneGeometry(2, 2);
+    const mesh = new THREE.Mesh(plane, glitchMaterial);
+    scene.add(mesh);
+
+    function onResize() {
+      renderer.setSize(window.innerWidth, window.innerHeight);
+      glitchMaterial.uniforms.uResolution.value.set(window.innerWidth, window.innerHeight);
+    }
+    window.addEventListener('resize', onResize);
+
+    function animate(time) {
+      requestAnimationFrame(animate);
+      glitchMaterial.uniforms.uTime.value = time * 0.001;
+      renderer.render(scene, camera);
+    }
+    animate(0);
+  </script>
+</body>
+</html>
+
