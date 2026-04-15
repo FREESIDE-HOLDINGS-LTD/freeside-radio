@@ -11,11 +11,13 @@
       overflow: hidden;
       width: 100vw;
       height: 100vh;
+      cursor: pointer;
     }
     canvas { display: block; }
   </style>
 </head>
 <body>
+  <audio id="radio" preload="none" src="https://mixnet.dev/stream"></audio>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
   <script>
     const scene = new THREE.Scene();
@@ -33,6 +35,9 @@
     textCanvas.width = window.innerWidth;
     textCanvas.height = window.innerHeight;
 
+    let isPlaying = false;
+    const audio = document.getElementById('radio');
+
     function drawText() {
       ctx.clearRect(0, 0, textCanvas.width, textCanvas.height);
       ctx.fillStyle = '#000000';
@@ -41,10 +46,9 @@
       ctx.font = 'bold 120px monospace';
       ctx.textAlign = 'center';
       ctx.textBaseline = 'top';
-      // 2em offset from top ≈ 240px at 120px font size
       ctx.fillText('radio freeside', textCanvas.width / 2, 240);
-      ctx.font = 'bold 48px monospace';
-      ctx.fillText('$ mpv --cache=no https://mixnet.dev/stream', textCanvas.width / 2, 400);
+      ctx.font = 'bold 64px monospace';
+      ctx.fillText(isPlaying ? '' : 'CLICK TO PLAY', textCanvas.width / 2, 500);
     }
     drawText();
 
@@ -141,6 +145,20 @@
       glitchMaterial.uniforms.uResolution.value.set(window.innerWidth, window.innerHeight);
     }
     window.addEventListener('resize', onResize);
+
+    document.addEventListener('click', () => {
+      if (isPlaying) {
+        audio.pause();
+        audio.removeAttribute('src');
+        audio.load();
+        audio.src = 'https://mixnet.dev/stream';
+      } else {
+        audio.play();
+      }
+      isPlaying = !isPlaying;
+      drawText();
+      textTexture.needsUpdate = true;
+    });
 
     function animate(time) {
       requestAnimationFrame(animate);
