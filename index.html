@@ -164,8 +164,9 @@
         audio.pause();
         audio.removeAttribute('src');
         audio.load();
-        audio.src = 'https://mixnet.dev/stream';
       } else {
+        audio.src = 'https://mixnet.dev/stream';
+        audio.load();
         audio.play();
       }
       isPlaying = !isPlaying;
