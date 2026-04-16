@@ -11,15 +11,21 @@
       overflow: hidden;
       width: 100vw;
       height: 100vh;
-      cursor: pointer;
+
+      .online {
+        cursor: pointer;
+      }
     }
     canvas { display: block; }
   </style>
 </head>
 <body>
-  <audio id="radio" preload="none" src="https://mixnet.dev/stream"></audio>
+  <audio id="radio" preload="none"></audio>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
   <script>
+    const headerName = 'icy-br';
+    const url = 'https://mixnet.dev/stream';
+
     const scene = new THREE.Scene();
     const camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0.1, 10);
     camera.position.z = 1;
@@ -36,6 +42,7 @@
     textCanvas.height = window.innerHeight;
 
     let isPlaying = false;
+    let isOnline = false;
     const audio = document.getElementById('radio');
 
     function drawText() {
@@ -52,7 +59,7 @@
       ctx.textBaseline = 'middle';
       ctx.fillText('radio freeside', textCanvas.width / 2, textCanvas.height * 0.4);
       ctx.font = 'bold ' + subtitleSize + 'px monospace';
-      ctx.fillText(isPlaying ? '' : 'click to play', textCanvas.width / 2, textCanvas.height * 0.4 + titleSize * 1.2);
+      ctx.fillText(isOnline ? (isPlaying ? '' : 'click to play') : 'we\'re offline', textCanvas.width / 2, textCanvas.height * 0.4 + titleSize * 1.2);
     }
     drawText();
 
@@ -159,13 +166,37 @@
     window.addEventListener('resize', onResize);
     window.addEventListener('orientationchange', () => setTimeout(onResize, 100));
 
+
+    async function checkStream() {
+      const controller = new AbortController();
+      try {
+        const response = await fetch(url, { method: 'GET', signal: controller.signal });
+        controller.abort();
+        isOnline = response.headers.has(headerName);
+      } catch (e) {
+        if (e.name !== 'AbortError') {
+          isOnline = false;
+        }
+      }
+      drawText();
+      textTexture.needsUpdate = true;
+      document.body.className = isOnline ? 'online' : 'offline';
+    }
+
+    checkStream();
+    setInterval(checkStream, 10000);
+
     document.addEventListener('click', () => {
+      if (!isOnline) {
+        return;
+      }
+
       if (isPlaying) {
         audio.pause();
         audio.removeAttribute('src');
         audio.load();
       } else {
-        audio.src = 'https://mixnet.dev/stream';
+        audio.src = url;
         audio.load();
         audio.play();
       }
