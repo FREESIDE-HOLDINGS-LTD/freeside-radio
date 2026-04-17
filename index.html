@@ -5,7 +5,12 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>freeside radio</title>
   <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; }
+    * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+    }
+
     body {
       background: #000;
       overflow: hidden;
@@ -16,11 +21,14 @@
     .online {
       cursor: pointer;
     }
-    canvas { display: block; }
+
+    canvas {
+        display: block;
+    }
   </style>
 </head>
 <body>
-  <audio id="radio" preload="none" src="https://mixnet.dev/stream"></audio>
+  <audio id="radio" preload="none" src="https://mixnet.dev/stream"></audio> <!-- don't remove the url to make mpv work -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
   <script>
     const url = 'https://mixnet.dev/stream';
