@@ -195,6 +195,7 @@
         audio.removeAttribute('src');
         audio.load();
       } else {
+        audio.src = url;
         audio.load();
         audio.play();
       }
