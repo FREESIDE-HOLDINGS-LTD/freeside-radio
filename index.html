@@ -23,7 +23,6 @@
   <audio id="radio" preload="none" src="https://mixnet.dev/stream"></audio>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
   <script>
-    const headerName = 'icy-br';
     const url = 'https://mixnet.dev/stream';
 
     const scene = new THREE.Scene();
@@ -171,8 +170,8 @@
       const controller = new AbortController();
       try {
         const response = await fetch(url, { method: 'GET', signal: controller.signal });
+        isOnline = response.status == 200;
         controller.abort();
-        isOnline = response.headers.has(headerName);
       } catch (e) {
         if (e.name !== 'AbortError') {
           isOnline = false;
