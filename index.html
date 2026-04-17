@@ -195,7 +195,7 @@
         audio.removeAttribute('src');
         audio.load();
       } else {
-        audio.src = url;
+        audio.src = url + '?fuckcaching=' + Date.now();
         audio.load();
         audio.play();
       }
