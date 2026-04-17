@@ -37,6 +37,7 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
   <script>
     const url = 'https://mixnet.dev/stream';
+    const statusUrl = 'https://mixnet.dev/status-json.xsl';
 
     const scene = new THREE.Scene();
     const camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0.1, 10);
@@ -56,6 +57,7 @@
     const Status = { LOADING: 'loading', ONLINE: 'online', OFFLINE: 'offline' };
     let isPlaying = false;
     let status = Status.LOADING;
+    let description = '';
     const audio = document.getElementById('radio');
 
     function drawText() {
@@ -65,19 +67,28 @@
       ctx.fillStyle = '#ffffff';
 
       const titleSize = Math.min(textCanvas.width / 12, 120);
-      const subtitleSize = Math.min(textCanvas.width / 20, 64);
+      const fontSize = Math.min(textCanvas.width / 20, 64);
 
-      ctx.font = 'bold ' + titleSize + 'px "VT323"';
+      ctx.font = 'bold ' + titleSize + 'px "VT323", monospace';
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
       ctx.fillText('radio freeside', textCanvas.width / 2, textCanvas.height * 0.4);
-      ctx.font = 'bold ' + subtitleSize + 'px "VT323"';
+
+      let yOffset = textCanvas.height * 0.4 + titleSize * 1.2;
+
+      ctx.font = 'bold ' + fontSize + 'px "VT323", monospace';
+
+      if (description) {
+        ctx.fillText(description, textCanvas.width / 2, yOffset);
+        yOffset += fontSize * 1.2;
+      }
+
       const subtitle = {
         [Status.LOADING]: 'tuning in...',
         [Status.ONLINE]: isPlaying ? '' : 'click to play',
         [Status.OFFLINE]: 'we\'re offline',
       }[status];
-      ctx.fillText(subtitle, textCanvas.width / 2, textCanvas.height * 0.4 + titleSize * 1.2);
+      ctx.fillText(subtitle, textCanvas.width / 2, yOffset);
     }
     drawText();
 
@@ -186,15 +197,19 @@
 
 
     async function checkStream() {
-      const controller = new AbortController();
       try {
-        const response = await fetch(url, { method: 'GET', signal: controller.signal });
-        status = response.status == 200 ? Status.ONLINE : Status.OFFLINE;
-        controller.abort();
-      } catch (e) {
-        if (e.name !== 'AbortError') {
+        const response = await fetch(statusUrl);
+        const data = await response.json();
+        if (data.icestats && data.icestats.source) {
+          status = Status.ONLINE;
+          description = data.icestats.source.server_description || '';
+        } else {
           status = Status.OFFLINE;
+          description = '';
         }
+      } catch (e) {
+        status = Status.OFFLINE;
+        description = '';
       }
       drawText();
       textTexture.needsUpdate = true;
