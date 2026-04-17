@@ -5,6 +5,11 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>freeside radio</title>
   <style>
+    @font-face {
+      font-family: 'VT323';
+      src: url('VT323/VT323-Regular.ttf') format('truetype');
+    }
+
     * {
         margin: 0;
         padding: 0;
@@ -48,8 +53,9 @@
     textCanvas.width = window.innerWidth;
     textCanvas.height = window.innerHeight;
 
+    const Status = { LOADING: 'loading', ONLINE: 'online', OFFLINE: 'offline' };
     let isPlaying = false;
-    let isOnline = false;
+    let status = Status.LOADING;
     const audio = document.getElementById('radio');
 
     function drawText() {
@@ -61,12 +67,17 @@
       const titleSize = Math.min(textCanvas.width / 12, 120);
       const subtitleSize = Math.min(textCanvas.width / 20, 64);
 
-      ctx.font = 'bold ' + titleSize + 'px monospace';
+      ctx.font = 'bold ' + titleSize + 'px "VT323"';
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
       ctx.fillText('radio freeside', textCanvas.width / 2, textCanvas.height * 0.4);
-      ctx.font = 'bold ' + subtitleSize + 'px monospace';
-      ctx.fillText(isOnline ? (isPlaying ? '' : 'click to play') : 'we\'re offline', textCanvas.width / 2, textCanvas.height * 0.4 + titleSize * 1.2);
+      ctx.font = 'bold ' + subtitleSize + 'px "VT323"';
+      const subtitle = {
+        [Status.LOADING]: 'tuning in...',
+        [Status.ONLINE]: isPlaying ? '' : 'click to play',
+        [Status.OFFLINE]: 'we\'re offline',
+      }[status];
+      ctx.fillText(subtitle, textCanvas.width / 2, textCanvas.height * 0.4 + titleSize * 1.2);
     }
     drawText();
 
@@ -178,23 +189,27 @@
       const controller = new AbortController();
       try {
         const response = await fetch(url, { method: 'GET', signal: controller.signal });
-        isOnline = response.status == 200;
+        status = response.status == 200 ? Status.ONLINE : Status.OFFLINE;
         controller.abort();
       } catch (e) {
         if (e.name !== 'AbortError') {
-          isOnline = false;
+          status = Status.OFFLINE;
         }
       }
       drawText();
       textTexture.needsUpdate = true;
-      document.body.className = isOnline ? 'online' : 'offline';
+      switch (status) {
+        case Status.ONLINE:  document.body.className = 'online'; break;
+        case Status.OFFLINE: document.body.className = 'offline'; break;
+        case Status.LOADING: document.body.className = 'loading'; break;
+      }
     }
 
     checkStream();
     setInterval(checkStream, 10000);
 
     document.addEventListener('click', () => {
-      if (!isOnline) {
+      if (status !== Status.ONLINE) {
         return;
       }
 
