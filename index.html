@@ -20,7 +20,7 @@
   </style>
 </head>
 <body>
-  <audio id="radio" preload="none"></audio>
+  <audio id="radio" preload="none" src="https://mixnet.dev/stream"></audio>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
   <script>
     const headerName = 'icy-br';
@@ -196,7 +196,6 @@
         audio.removeAttribute('src');
         audio.load();
       } else {
-        audio.src = url;
         audio.load();
         audio.play();
       }
