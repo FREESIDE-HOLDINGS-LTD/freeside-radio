@@ -47,12 +47,15 @@
       const pair = pairs[pairIndex];
       document.title = pair.title;
       const oldLink = document.getElementById("favicon");
-      const newLink = document.createElement("link");
-      newLink.id = "favicon";
-      newLink.rel = "icon";
-      newLink.type = "image/x-icon";
-      newLink.href = pair.favicon + "?" + Date.now();
-      oldLink.parentNode.replaceChild(newLink, oldLink);
+      if (oldLink) oldLink.remove();
+      setTimeout(() => {
+        const newLink = document.createElement("link");
+        newLink.id = "favicon";
+        newLink.rel = "icon";
+        newLink.type = "image/x-icon";
+        newLink.href = pair.favicon + "?" + Date.now();
+        document.head.appendChild(newLink);
+      }, 0);
       pairIndex = (pairIndex + 1) % pairs.length;
     }
 
