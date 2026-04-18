@@ -36,15 +36,28 @@
 <body>
   <script>
     const pairs = [
-          { title: "Facebook", favicon: "facebook.ico" },
-          { title: "Feed | LinkedIn", favicon: "linkedin.ico" }
-          { title: "Myspace", favicon: "myspace.ico" }
+      { title: "Facebook", favicon: "facebook.ico" },
+      { title: "Feed | LinkedIn", favicon: "linkedin.ico" },
+      { title: "Myspace", favicon: "myspace.ico" }
     ];
 
-    const randomPair = pairs[Math.floor(Math.random() * pairs.length)];
- 
-        document.title = randomPair.title;
-      document.getElementById("favicon").href = randomPair.favicon;
+    let pairIndex = Math.floor(Math.random() * pairs.length);
+
+    function applyPair() {
+      const pair = pairs[pairIndex];
+      document.title = pair.title;
+      const oldLink = document.getElementById("favicon");
+      const newLink = document.createElement("link");
+      newLink.id = "favicon";
+      newLink.rel = "icon";
+      newLink.type = "image/x-icon";
+      newLink.href = pair.favicon + "?" + Date.now();
+      oldLink.parentNode.replaceChild(newLink, oldLink);
+      pairIndex = (pairIndex + 1) % pairs.length;
+    }
+
+    applyPair();
+    setInterval(applyPair, 10000);
   </script>
   <audio id="radio" preload="none" src="https://mixnet.dev/stream"></audio> <!-- don't remove the url to make mpv work -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
